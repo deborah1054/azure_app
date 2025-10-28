@@ -15,7 +15,7 @@ export async function POST(req) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",  // change model if you like
+        model: "minimax/minimax-m2:free",  // change model if you like
         messages,
       }),
     });
