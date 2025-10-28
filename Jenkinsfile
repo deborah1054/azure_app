@@ -6,11 +6,11 @@ pipeline {
     }
     
     environment {
-        # --- Configuration ---
-        # ⚠️ CRITICAL: Ensure 'nextjsregistryygwd.azurecr.io' is your actual Azure Container Registry (ACR) login server 
+        // --- Configuration ---
+        // ⚠️ CRITICAL: Ensure 'nextjsregistryygwd.azurecr.io' is your actual Azure Container Registry (ACR) login server 
         ACR_REGISTRY = 'nextjsregistryygwd.azurecr.io'
         APP_IMAGE_NAME = 'nextjs-app'
-        # The image tag will use the Jenkins build number for unique versioning
+        // The image tag will use the Jenkins build number for unique versioning
         DOCKER_IMAGE = "${ACR_REGISTRY}/${APP_IMAGE_NAME}:${BUILD_NUMBER}"
         AZ_RESOURCE_GROUP = 'rg-nextjs-cicd'
         AZ_APP_NAME = 'app-nextjs-ci-cd-ygwd'
@@ -59,7 +59,7 @@ pipeline {
         
         stage('Deploy Container to Azure') {
             steps {
-                # We use the same 'withCredentials' block to keep the Azure login context active
+                // We use the same 'withCredentials' block to keep the Azure login context active
                 withCredentials([string(credentialsId: 'AZURE_SP_CREDENTIALS', variable: 'AZURE_AUTH_JSON')]) {
                     sh """
                         echo "5. Deploying new image to Azure App Service: \${AZ_APP_NAME}"
