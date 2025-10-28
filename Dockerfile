@@ -1,39 +1,38 @@
-# Stage 1: Build the Next.js application
-FROM node:20-alpine AS builder
+# ----------------------------------------------------------------------
+# STAGE 1: Build the Next.js application (using a robust Node image)
+# ----------------------------------------------------------------------
+FROM node:20 AS builder
 
-# Install dependencies and build tools
+# Set working directory inside the container
 WORKDIR /app
-COPY package.json yarn.lock ./
-# Optional: Install Rust for some Next.js dependencies (e.g., Turbopack)
-# RUN apk add --no-cache python3 make g++ 
 
-RUN yarn install --frozen-lockfile
+# Copy package files first to leverage Docker caching for dependencies
+COPY package.json package-lock.json ./
+RUN npm install
 
-# Copy the rest of the source code
+# Copy all application files
 COPY . .
 
-# Build the Next.js app, which creates the .next/standalone folder
-RUN yarn build
+# Run the Next.js production build
+RUN npm run build
 
-# Stage 2: Create the final, minimal runtime image
-# Use a minimal node image that only copies the necessary files.
-FROM node:20-alpine AS runner
+# ----------------------------------------------------------------------
+# STAGE 2: Production Runtime Image (using a smaller, leaner image)
+# ----------------------------------------------------------------------
+FROM node:20-alpine
 
-# Set the environment variable for standalone mode
-ENV NODE_ENV production
-# Set the port the container will listen on
-ENV PORT 3000
-
-# Next.js sets the required files into the standalone folder
+# Set the working directory for the final application
 WORKDIR /app
 
-# Copy the standalone application files and necessary node modules
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-
-# Expose the port
+# The Next.js server runs on port 3000 by default
 EXPOSE 3000
 
-# Start the Next.js server using the generated entry point
-CMD ["node", "server.js"]
+# Copy necessary files from the builder stage
+# We only need the node modules, the build output (.next), and the public assets
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/public ./public
+
+# Define the command to start the Next.js server
+CMD ["npm", "start"]

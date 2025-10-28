@@ -5,6 +5,17 @@ pipeline {
         jdk 'OpenJDK_17' 
     }
     
+    environment {
+        # --- Configuration ---
+        # ⚠️ CRITICAL: Ensure 'nextjsregistryygwd.azurecr.io' is your actual Azure Container Registry (ACR) login server 
+        ACR_REGISTRY = 'nextjsregistryygwd.azurecr.io'
+        APP_IMAGE_NAME = 'nextjs-app'
+        # The image tag will use the Jenkins build number for unique versioning
+        DOCKER_IMAGE = "${ACR_REGISTRY}/${APP_IMAGE_NAME}:${BUILD_NUMBER}"
+        AZ_RESOURCE_GROUP = 'rg-nextjs-cicd'
+        AZ_APP_NAME = 'app-nextjs-ci-cd-ygwd'
+    }
+    
     stages {
         stage('Checkout Code') {
             steps { echo "Code checked out from ${env.GIT_URL}" }
@@ -18,32 +29,48 @@ pipeline {
             steps { sh 'npm run build' }
         }
         
-        stage('Package Artifacts') {
-            steps {
-                sh 'zip -r nextjs.zip .next public package.json package-lock.json next.config.js'
-                archiveArtifacts artifacts: 'nextjs.zip' 
-            }
-        }
-
-        stage('Deploy to Azure App Service') {
+        stage('Build & Push Docker Image') {
             steps {
                 withCredentials([string(credentialsId: 'AZURE_SP_CREDENTIALS', variable: 'AZURE_AUTH_JSON')]) {
                     sh """
-                        # Assign the sensitive JSON data to a simple shell variable for easy access
+                        # --- Authentication Setup ---
                         AZ_DATA='${AZURE_AUTH_JSON}'
-
-                        # Extract Service Principal credentials using shell parsing
                         APP_ID=\$(echo \${AZ_DATA} | grep -o '"clientId": *"[^"]*"' | awk -F'"' '{print \$4}')
                         SECRET=\$(echo \${AZ_DATA} | grep -o '"clientSecret": *"[^"]*"' | awk -F'"' '{print \$4}')
                         TENANT_ID=\$(echo \${AZ_DATA} | grep -o '"tenantId": *"[^"]*"' | awk -F'"' '{print \$4}')
 
-                        echo "Attempting to log in to Azure..."
+                        echo "1. Logging in to Azure..."
+                        az login --service-principal -u \${APP_ID} -p \${SECRET} --tenant \${TENANT_ID} --allow-no-subscriptions
 
-                        # 1. Log in to Azure
-                        az login --service-principal -u \${APP_ID} -p \${SECRET} --tenant \${TENANT_ID}
+                        echo "2. Logging in to Azure Container Registry: \${ACR_REGISTRY}"
+                        # This command requires Docker to be installed on the Jenkins agent
+                        az acr login --name \$(echo \${ACR_REGISTRY} | cut -d. -f1)
 
-                        # 2. Deploy the zipped artifact (Removed the invalid '--build-remote false' flag)
-                        az webapp deployment source config-zip --resource-group rg-nextjs-cicd --name app-nextjs-ci-cd-ygwd --src nextjs.zip
+                        echo "3. Building Docker image: \${DOCKER_IMAGE}"
+                        # The dot '.' means it looks for the Dockerfile in the current directory
+                        docker build -t \${DOCKER_IMAGE} .
+
+                        echo "4. Pushing Docker image to ACR"
+                        docker push \${DOCKER_IMAGE}
+                    """
+                }
+            }
+        }
+        
+        stage('Deploy Container to Azure') {
+            steps {
+                # We use the same 'withCredentials' block to keep the Azure login context active
+                withCredentials([string(credentialsId: 'AZURE_SP_CREDENTIALS', variable: 'AZURE_AUTH_JSON')]) {
+                    sh """
+                        echo "5. Deploying new image to Azure App Service: \${AZ_APP_NAME}"
+                        az webapp config container set \\
+                            --resource-group \${AZ_RESOURCE_GROUP} \\
+                            --name \${AZ_APP_NAME} \\
+                            --docker-custom-image-name \${DOCKER_IMAGE} \\
+                            --enable-cd true \\
+                            --deployment-container-registry-server \${ACR_REGISTRY}
+                            
+                        echo "Deployment command sent. Azure will now pull the new image: \${DOCKER_IMAGE}"
                     """
                 }
             }
