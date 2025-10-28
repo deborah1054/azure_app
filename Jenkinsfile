@@ -29,32 +29,21 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'AZURE_SP_CREDENTIALS', variable: 'AZURE_AUTH_JSON')]) {
                     sh """
-                        # CORRECT FIX: Use Groovy interpolation inside shell single-quotes to protect the secret's special characters
+                        # Assign the sensitive JSON data to a simple shell variable for easy access
                         AZ_DATA='${AZURE_AUTH_JSON}'
 
-                        # Now we use standard shell syntax to parse the variable AZ_DATA
-                        # The backslashes on \$ and \$4 are still needed to prevent Groovy from interpreting them prematurely.
-                        
-                        # Extract APP_ID
+                        # Extract Service Principal credentials using shell parsing
                         APP_ID=\$(echo \${AZ_DATA} | grep -o '"clientId": *"[^"]*"' | awk -F'"' '{print \$4}')
-                        
-                        # Extract SECRET
                         SECRET=\$(echo \${AZ_DATA} | grep -o '"clientSecret": *"[^"]*"' | awk -F'"' '{print \$4}')
-                        
-                        # Extract TENANT_ID
                         TENANT_ID=\$(echo \${AZ_DATA} | grep -o '"tenantId": *"[^"]*"' | awk -F'"' '{print \$4}')
 
                         echo "Attempting to log in to Azure..."
 
-                        # Use the extracted values for Service Principal login
+                        # 1. Log in to Azure
                         az login --service-principal -u \${APP_ID} -p \${SECRET} --tenant \${TENANT_ID}
 
-                        # 2. Deploy the zipped artifact to your App Service
-                        az webapp deployment source config-zip \\
-                            --resource-group rg-nextjs-cicd \\
-                            --name app-nextjs-ci-cd-ygwd \\ 
-                            --src nextjs.zip \\
-                            --build-remote false
+                        # 2. Deploy the zipped artifact (ALL ON ONE LINE to avoid continuation errors)
+                        az webapp deployment source config-zip --resource-group rg-nextjs-cicd --name app-nextjs-ci-cd-ygwd --src nextjs.zip --build-remote false
                     """
                 }
             }
