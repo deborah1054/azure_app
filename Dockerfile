@@ -1,46 +1,39 @@
-# --- Stage 1: Build the Application ---
+# Stage 1: Build the Next.js application
 FROM node:20-alpine AS builder
 
-# Set the working directory inside the container
+# Install dependencies and build tools
 WORKDIR /app
+COPY package.json yarn.lock ./
+# Optional: Install Rust for some Next.js dependencies (e.g., Turbopack)
+# RUN apk add --no-cache python3 make g++ 
 
-# The 'COPY' commands are adjusted to pull files from the 'Azure_app' directory.
-# Copy package files first to leverage Docker caching for dependencies
-COPY ./Azure_app/package.json ./
-COPY ./Azure_app/package-lock.json ./
+RUN yarn install --frozen-lockfile
 
-# Install dependencies (Node.js/Next.js)
-RUN npm install
+# Copy the rest of the source code
+COPY . .
 
-# Copy the rest of the application code from the subdirectory
-COPY ./Azure_app/ .
+# Build the Next.js app, which creates the .next/standalone folder
+RUN yarn build
 
-# Build the Next.js application (creates the .next folder)
-# This command requires your package.json to have a "build" script (e.g., "next build")
-RUN npm run build
-
-# --- Stage 2: Create the Final Runtime Image ---
+# Stage 2: Create the final, minimal runtime image
+# Use a minimal node image that only copies the necessary files.
 FROM node:20-alpine AS runner
 
-# Set environment variables for the runtime
+# Set the environment variable for standalone mode
 ENV NODE_ENV production
-# Next.js will use this port, matching your Azure App Service setting (WEBSITES_PORT=8080)
-ENV PORT 8080
+# Set the port the container will listen on
+ENV PORT 3000
 
-# Set the working directory for the runtime
+# Next.js sets the required files into the standalone folder
 WORKDIR /app
 
-# Copy the built application and the necessary production dependencies from Stage 1
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/.next ./.next
+# Copy the standalone application files and necessary node modules
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 
-# Copy necessary runtime files from the subdirectory
-COPY ./Azure_app/public ./public
-COPY ./Azure_app/package.json ./package.json
+# Expose the port
+EXPOSE 3000
 
-# Expose the port (for documentation/clarity)
-EXPOSE 8080
-
-# Start the Next.js server in production mode
-# This command requires your package.json to have a "start" script (e.g., "next start")
-CMD ["npm", "start"]
+# Start the Next.js server using the generated entry point
+CMD ["node", "server.js"]
