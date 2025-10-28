@@ -29,21 +29,22 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'AZURE_SP_CREDENTIALS', variable: 'AZURE_AUTH_JSON')]) {
                     sh """
-                        # All dollar signs used by the shell must now be escaped (\$ instead of $)
+                        # Assign the sensitive JSON data to a simple shell variable for easy access
+                        AZ_DATA="${AZURE_AUTH_JSON}"
 
-                        # Extract APP_ID
-                        APP_ID=\$(echo \$AZURE_AUTH_JSON | grep -o '"clientId": *"[^"]*"' | awk -F'"' '{print \$4}')
+                        # Use literal single-quoted shell strings for the complex parsing commands.
+                        # We use the shell's dollar sign ($) for command substitution, not Groovy's.
                         
-                        # Extract SECRET
-                        SECRET=\$(echo \$AZURE_AUTH_JSON | grep -o '"clientSecret": *"[^"]*"' | awk -F'"' '{print \$4}')
+                        APP_ID=\$(echo \${AZ_DATA} | grep -o '"clientId": *"[^"]*"' | awk -F'"' '{print \$4}')
                         
-                        # Extract TENANT_ID
-                        TENANT_ID=\$(echo \$AZURE_AUTH_JSON | grep -o '"tenantId": *"[^"]*"' | awk -F'"' '{print \$4}')
+                        SECRET=\$(echo \${AZ_DATA} | grep -o '"clientSecret": *"[^"]*"' | awk -F'"' '{print \$4}')
+                        
+                        TENANT_ID=\$(echo \${AZ_DATA} | grep -o '"tenantId": *"[^"]*"' | awk -F'"' '{print \$4}')
 
                         echo "Attempting to log in to Azure..."
 
                         # Use the extracted values for Service Principal login
-                        az login --service-principal -u \$APP_ID -p \$SECRET --tenant \$TENANT_ID
+                        az login --service-principal -u \${APP_ID} -p \${SECRET} --tenant \${TENANT_ID}
 
                         # 2. Deploy the zipped artifact to your App Service
                         az webapp deployment source config-zip \\
