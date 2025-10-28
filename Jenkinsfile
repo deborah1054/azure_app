@@ -2,7 +2,7 @@ pipeline {
     agent any 
     
     tools {
-        // Must match the name you set in your Jenkins Global Tool Configuration
+        // This must match the name of the JDK you configured in Jenkins
         jdk 'OpenJDK_17' 
     }
     
@@ -24,20 +24,11 @@ pipeline {
                 sh 'npm run build' 
             }
         }
-
-        // *** NEW STAGE TO INSTALL UTILITIES ***
-        stage('Install Utilities') {
-            steps {
-                echo 'Installing zip utility for packaging...'
-                // Update package list and install the zip utility
-                sh 'sudo apt-get update && sudo apt-get install -y zip'
-            }
-        }
-        // **************************************
         
+        // This stage will now succeed because the 'zip' utility was installed manually on the VM
         stage('Package Artifacts') {
             steps {
-                // Now that zip is installed, this command should succeed
+                // Creates a nextjs.zip archive with everything needed for Azure App Service
                 sh 'zip -r nextjs.zip .next public package.json package-lock.json next.config.js'
                 
                 archiveArtifacts artifacts: 'nextjs.zip' 
@@ -46,6 +37,7 @@ pipeline {
 
         stage('Deploy to Azure App Service') {
             steps {
+                // AZURE_SP_CREDENTIALS is the Credentials ID you set in Jenkins
                 withCredentials([string(credentialsId: 'AZURE_SP_CREDENTIALS', variable: 'AZURE_AUTH_JSON')]) {
                     sh """
                         # 1. Log in to Azure using the Service Principal JSON
@@ -53,6 +45,7 @@ pipeline {
                         az login --service-principal --user @azureauth.json
                         
                         # 2. Deploy the zipped artifact to your App Service
+                        # Using the identified App Service name: app-nextjs-ci-cd-ygwd
                         az webapp deployment source config-zip \\
                             --resource-group rg-nextjs-cicd \\
                             --name app-nextjs-ci-cd-ygwd \\ 
