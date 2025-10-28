@@ -2,58 +2,54 @@ pipeline {
     agent any 
     
     tools {
-        // This must match the name of the JDK you configured in Jenkins
         jdk 'OpenJDK_17' 
     }
     
     stages {
         stage('Checkout Code') {
-            steps {
-                echo "Code checked out from ${env.GIT_URL}"
-            }
+            steps { echo "Code checked out from ${env.GIT_URL}" }
         }
         
         stage('Install Dependencies') {
-            steps {
-                sh 'npm install' 
-            }
+            steps { sh 'npm install' }
         }
         
         stage('Build Artifacts') {
-            steps {
-                sh 'npm run build' 
-            }
+            steps { sh 'npm run build' }
         }
         
-        // This stage will now succeed because the 'zip' utility was installed manually on the VM
         stage('Package Artifacts') {
             steps {
-                // Creates a nextjs.zip archive with everything needed for Azure App Service
                 sh 'zip -r nextjs.zip .next public package.json package-lock.json next.config.js'
-                
                 archiveArtifacts artifacts: 'nextjs.zip' 
             }
         }
 
         stage('Deploy to Azure App Service') {
             steps {
-                // AZURE_SP_CREDENTIALS is the Credentials ID you set in Jenkins
+                // AZURE_AUTH_JSON holds the Service Principal JSON as a string
                 withCredentials([string(credentialsId: 'AZURE_SP_CREDENTIALS', variable: 'AZURE_AUTH_JSON')]) {
                     sh """
-                        # 1. Log in to Azure using the Service Principal JSON
-                        echo \$AZURE_AUTH_JSON > azureauth.json
-                        az login --service-principal --user @azureauth.json
+                        # We use simple string parsing (grep, awk) to extract the needed values
+                        # This avoids the dependency on 'jq'.
                         
+                        APP_ID=$(echo \$AZURE_AUTH_JSON | grep -o '"clientId": *"[^"]*"' | awk -F'"' '{print \$4}')
+                        SECRET=$(echo \$AZURE_AUTH_JSON | grep -o '"clientSecret": *"[^"]*"' | awk -F'"' '{print \$4}')
+                        TENANT_ID=$(echo \$AZURE_AUTH_JSON | grep -o '"tenantId": *"[^"]*"' | awk -F'"' '{print \$4}')
+
+                        echo "Attempting to log in to Azure..."
+
+                        # Use the extracted values for a reliable Service Principal login
+                        az login --service-principal -u \$APP_ID -p \$SECRET --tenant \$TENANT_ID
+
                         # 2. Deploy the zipped artifact to your App Service
-                        # Using the identified App Service name: app-nextjs-ci-cd-ygwd
                         az webapp deployment source config-zip \\
                             --resource-group rg-nextjs-cicd \\
                             --name app-nextjs-ci-cd-ygwd \\ 
                             --src nextjs.zip \\
                             --build-remote false
                         
-                        # Clean up the local auth file
-                        rm azureauth.json
+                        # No local files to clean up anymore!
                     """
                 }
             }
