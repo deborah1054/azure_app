@@ -29,16 +29,19 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'AZURE_SP_CREDENTIALS', variable: 'AZURE_AUTH_JSON')]) {
                     sh """
-                        # Assign the sensitive JSON data to a simple shell variable for easy access
-                        AZ_DATA="${AZURE_AUTH_JSON}"
+                        # CORRECT FIX: Use Groovy interpolation inside shell single-quotes to protect the secret's special characters
+                        AZ_DATA='${AZURE_AUTH_JSON}'
 
-                        # Use literal single-quoted shell strings for the complex parsing commands.
-                        # We use the shell's dollar sign ($) for command substitution, not Groovy's.
+                        # Now we use standard shell syntax to parse the variable AZ_DATA
+                        # The backslashes on \$ and \$4 are still needed to prevent Groovy from interpreting them prematurely.
                         
+                        # Extract APP_ID
                         APP_ID=\$(echo \${AZ_DATA} | grep -o '"clientId": *"[^"]*"' | awk -F'"' '{print \$4}')
                         
+                        # Extract SECRET
                         SECRET=\$(echo \${AZ_DATA} | grep -o '"clientSecret": *"[^"]*"' | awk -F'"' '{print \$4}')
                         
+                        # Extract TENANT_ID
                         TENANT_ID=\$(echo \${AZ_DATA} | grep -o '"tenantId": *"[^"]*"' | awk -F'"' '{print \$4}')
 
                         echo "Attempting to log in to Azure..."
