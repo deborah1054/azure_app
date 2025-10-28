@@ -67,8 +67,7 @@ pipeline {
                             --resource-group \${AZ_RESOURCE_GROUP} \\
                             --name \${AZ_APP_NAME} \\
                             --docker-custom-image-name \${DOCKER_IMAGE} \\
-                            --enable-cd true \\
-                            --deployment-container-registry-server \${ACR_REGISTRY}
+                            --docker-registry-server-url "https://\${ACR_REGISTRY}"
                             
                         echo "Deployment command sent. Azure will now pull the new image: \${DOCKER_IMAGE}"
                     """
