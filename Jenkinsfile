@@ -28,10 +28,13 @@ pipeline {
             }
         }
         
-        stage('Archive Artifacts') {
+stage('Archive Artifacts') {
              steps {
-                 // Adjust the folder name as needed (e.g., dist/** or build/**)
-                 archiveArtifacts artifacts: 'build/**' 
+                 // Next.js output directory is .next
+                 archiveArtifacts artifacts: '.next/**' 
+                 
+                 // You should also archive the 'public' folder if you have static assets
+                 archiveArtifacts artifacts: '.next/**, public/**' 
              }
         }
     }
