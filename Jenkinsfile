@@ -27,19 +27,22 @@ pipeline {
 
         stage('Deploy to Azure App Service') {
             steps {
-                // AZURE_AUTH_JSON holds the Service Principal JSON as a string
                 withCredentials([string(credentialsId: 'AZURE_SP_CREDENTIALS', variable: 'AZURE_AUTH_JSON')]) {
                     sh """
-                        # We use simple string parsing (grep, awk) to extract the needed values
-                        # This avoids the dependency on 'jq'.
+                        # All dollar signs used by the shell must now be escaped (\$ instead of $)
+
+                        # Extract APP_ID
+                        APP_ID=\$(echo \$AZURE_AUTH_JSON | grep -o '"clientId": *"[^"]*"' | awk -F'"' '{print \$4}')
                         
-                        APP_ID=$(echo \$AZURE_AUTH_JSON | grep -o '"clientId": *"[^"]*"' | awk -F'"' '{print \$4}')
-                        SECRET=$(echo \$AZURE_AUTH_JSON | grep -o '"clientSecret": *"[^"]*"' | awk -F'"' '{print \$4}')
-                        TENANT_ID=$(echo \$AZURE_AUTH_JSON | grep -o '"tenantId": *"[^"]*"' | awk -F'"' '{print \$4}')
+                        # Extract SECRET
+                        SECRET=\$(echo \$AZURE_AUTH_JSON | grep -o '"clientSecret": *"[^"]*"' | awk -F'"' '{print \$4}')
+                        
+                        # Extract TENANT_ID
+                        TENANT_ID=\$(echo \$AZURE_AUTH_JSON | grep -o '"tenantId": *"[^"]*"' | awk -F'"' '{print \$4}')
 
                         echo "Attempting to log in to Azure..."
 
-                        # Use the extracted values for a reliable Service Principal login
+                        # Use the extracted values for Service Principal login
                         az login --service-principal -u \$APP_ID -p \$SECRET --tenant \$TENANT_ID
 
                         # 2. Deploy the zipped artifact to your App Service
@@ -48,8 +51,6 @@ pipeline {
                             --name app-nextjs-ci-cd-ygwd \\ 
                             --src nextjs.zip \\
                             --build-remote false
-                        
-                        # No local files to clean up anymore!
                     """
                 }
             }
