@@ -52,3 +52,11 @@ override.tf.json
 *_override.tf.json
 .terraformrc
 terraform.rc
+# Terraform
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+*.tfstate*
+crash.log
+override.tf
+override.tf.json
