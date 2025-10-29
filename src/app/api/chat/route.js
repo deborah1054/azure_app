@@ -15,7 +15,7 @@ export async function POST(req) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "minimax/minimax-m2:free",  // change model if you like
+        model: "deepseek/deepseek-chat-v3.1:free",  // change model if you like
         messages,
       }),
     });
