@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 
   export const metadata = {
       icons: {
-        icon: '/logozta.ico',
+        icon: '/favicon.ico',
       },
 
       title: 'My Next.js App',
