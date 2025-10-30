@@ -4,7 +4,7 @@ import Image from 'next/image';
 const teamMembers = [
   {
     id: 1,
-    name: 'Deborah H.',
+    name: 'Deborah m',
     url:'https://www.rewind.sk/wp-content/uploads/2021/09/what-if-black-widow-1.jpg',
     role: 'Lead Developer',
   },
@@ -54,7 +54,7 @@ export default function TeamPage() {
             className="flex transform flex-col items-center rounded-xl bg-white p-6 text-center shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
           >
             {/* .avatar */}
-           <Image
+           {/* <Image
               // Corrected logic:
               // 1. Use 'member.url' if it exists.
               // 2. If 'member.url' is missing, fall back to the DiceBear URL.
@@ -63,7 +63,7 @@ export default function TeamPage() {
               width={100}
               height={100}
               className="mb-4 rounded-full bg-gray-200"
-            />
+            /> */}
             
             {/* .name */}
             <h2 className="text-xl font-semibold text-gray-900">
