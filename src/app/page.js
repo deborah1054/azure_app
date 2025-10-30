@@ -5,7 +5,7 @@ const teamMembers = [
   {
     id: 1,
     name: 'Deborah H.',
-    url:'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.shutterstock.com%2Fsearch%2Favatar-girl&psig=AOvVaw0GPV_atiQWwecZDTEhKkY3&ust=1761904169228000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCKjbxq3Sy5ADFQAAAAAdAAAAABAE',
+    url:'https://www.rewind.sk/wp-content/uploads/2021/09/what-if-black-widow-1.jpg',
     role: 'Lead Developer',
   },
   {
@@ -58,7 +58,7 @@ export default function TeamPage() {
               // Corrected logic:
               // 1. Use 'member.url' if it exists.
               // 2. If 'member.url' is missing, fall back to the DiceBear URL.
-              src={member.url || `https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.freepik.com%2Fpremium-vector%2Fman-avatar-profile-picture-isolated-background-avatar-profile-picture-man_284426143.htm&psig=AOvVaw0GPV_atiQWwecZDTEhKkY3&ust=1761904169228000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCKjbxq3Sy5ADFQAAAAAdAAAAABAl`}
+              src={member.url || `https://static0.gamerantimages.com/wordpress/wp-content/uploads/2022/07/what-if-avengers-Cropped.jpg`}
               alt={`${member.name}'s avatar`}
               width={100}
               height={100}
