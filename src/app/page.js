@@ -5,23 +5,28 @@ const teamMembers = [
   {
     id: 1,
     name: 'Deborah H.',
+    url:'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.shutterstock.com%2Fsearch%2Favatar-girl&psig=AOvVaw0GPV_atiQWwecZDTEhKkY3&ust=1761904169228000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCKjbxq3Sy5ADFQAAAAAdAAAAABAE',
     role: 'Lead Developer',
   },
   {
     id: 2,
-    name: 'Kerston A.',
+    name: 'Joshua A.',
     role: 'Project Manager',
   },
   {
     id: 3,
-    name: 'Flora M.',
+    name: 'Joy Subash.',
     role: 'UI/UX Designer',
   },
   {
     id: 4,
-    name: 'Alex Johnson',
+    name: 'Jude E',
     role: 'QA Engineer',
-  },
+  },  {
+    id: 5,
+    name: 'Gowtham ',
+    role: 'QA Engineer',
+  }
 ];
 
 export default function TeamPage() {
@@ -49,8 +54,11 @@ export default function TeamPage() {
             className="flex transform flex-col items-center rounded-xl bg-white p-6 text-center shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
           >
             {/* .avatar */}
-            <Image
-              src={`https://api.dicebear.com/7.x/initials/svg?seed=${member.name}`}
+           <Image
+              // Corrected logic:
+              // 1. Use 'member.url' if it exists.
+              // 2. If 'member.url' is missing, fall back to the DiceBear URL.
+              src={member.url || `https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.freepik.com%2Fpremium-vector%2Fman-avatar-profile-picture-isolated-background-avatar-profile-picture-man_284426143.htm&psig=AOvVaw0GPV_atiQWwecZDTEhKkY3&ust=1761904169228000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCKjbxq3Sy5ADFQAAAAAdAAAAABAl`}
               alt={`${member.name}'s avatar`}
               width={100}
               height={100}
